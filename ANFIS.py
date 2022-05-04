@@ -2,7 +2,10 @@ import random
 import numpy as np
 from copy import deepcopy
 from sklearn.linear_model import LinearRegression
-
+####################################################################
+###############################################################
+#######################################################################
+#############################################################################
 class EVOLUTIONARY_ANFIS:
     def __init__(self,functions,generations,offsprings,mutationRate,learningRate,chance,ruleComb):
         self.functions = functions
@@ -10,13 +13,15 @@ class EVOLUTIONARY_ANFIS:
         self.offsprings = offsprings
         self.mutationRate = mutationRate
         self.learningRate = learningRate
-        self.chance = chance #50 percent chance of changing std.
+        self.chance = chance ####50 percent chance### of changing#### std.
         self.ruleComb = ruleComb
-        self._noParam = 2 #Mean and Standard Deviation
+        self._noParam = 2 ###Mean## and ##Standard ###Deviation
 
     def gaussian(self,x, mu, sig):
         return np.exp((-np.power(x - mu, 2.) / (2 * np.power(sig, 2.))))
-    
+    ###############################################
+    #############################################
+    #############################################################
     def initialize(self,X):
         functions = self.functions
         noParam = self._noParam 
@@ -26,27 +31,30 @@ class EVOLUTIONARY_ANFIS:
         Ant = np.zeros((noParam,X.shape[1],X.shape[0],functions))
         #Layer 1 with input as data a
         L1 = np.zeros((X.shape[1],X.shape[0],functions))
-        #Layer 2 (Rules of combination)
+        #Layer 2 ####(Rules#### of combination)  ######
         if ruleComb == "simple":
             L2 = np.zeros((X.shape[0],functions)) 
-        elif ruleComb == "complete":
-            rules = X.shape[1]**functions
-            L2 = np.zeros((X.shape[0],rules))   
+        elif ruleComb == "complete":      #
+            rules = X.shape[1]**functions     #
+            L2 = np.zeros((X.shape[0],rules))     # 
         return inputs, Ant, L1, L2
+    ###########################################################
+    ###############################################################3
+    #########################################
     
     def mutation(self,arr):
-        mutationRate = self.mutationRate
-        learningRate = self.learningRate
-        chance = self.chance
-        temp = np.asarray(arr)   # Cast to numpy array
+        mutationRate = self.mutationRate #
+        learningRate = self.learningRate    #
+        chance = self.chance   # 
+        temp = np.asarray(arr)   # #Cast# to# numpy# array
         mean = temp[0]
-        meanShape = mean.shape
+        meanShape = mean.shape    ####################33
         std = temp[1]
-        stdShape = std.shape
-        mean = mean.flatten()    # Flatten to 1D
-        std = std.flatten()    # Flatten to 1D
-        num = int(mutationRate*mean.size) # number of elements to get
-        if random.uniform(0,1)>chance:
+        stdShape = std.shape     ###
+        mean = mean.flatten()    # #Flatten to 1D
+        std = std.flatten()    ### Flatten ##to 1D
+        num = int(mutationRate*mean.size) # number #of elements to get
+        if random.uniform(0,1)>chance:     #
             inds = np.random.choice(mean.size, size=num)   # Get random indices
             mean[inds] -= np.random.uniform(0,1,size=num)*learningRate        # Fill with something
             mean = mean.reshape(meanShape)                     # Restore original shape
@@ -58,42 +66,45 @@ class EVOLUTIONARY_ANFIS:
             std = np.where(std==0, 0.0001, std) #standard deviation cannot be zero
             #temp = np.where(temp<=0, 0.0001, temp)
             #temp = np.where(temp>=1, 0.9999, temp)
-            
+            ##################################################################
             mean = mean.reshape(meanShape)
         temp[0] = mean
         temp[1] = std
         return temp
-    
+    ################################################
+    ###########################################################
     def init_population(self,X):
         noParam = self._noParam
-        functions = self.functions
-        offsprings = self.offsprings
+        functions = self.functions   ################
+        offsprings = self.offsprings  ################
         bestParam = np.random.rand(noParam,X.shape[1],functions)
         parentParam = deepcopy(bestParam)
-        popParam = []
+        popParam = []                      ######################
         for i in range(offsprings):
             popParam.append(self.mutation(parentParam))
         return popParam
-    
+    ####################################################
+    #############################################################
     def init_model(self,model=LinearRegression()):
-        models = []
-        for i in range(self.functions):
-                models.append(model)
+        models = []                          #############################
+        for i in range(self.functions):     ########################
+                models.append(model)         ####################
         return models
-
+##########################################################
+########################################################################
     def forwardPass(self,param,X,inputs,Ant,L1,L2,functions):
         noParam = self._noParam
         
         for i in range(X.shape[1]):   #input variables     
             inputs[i] = np.repeat(X[:,i].reshape(-1,1),functions,axis=1)
 
-        for ii in range(noParam):   #Anticedent parameters
+        for ii in range(noParam):   #Anticedent###### parameters
             for i in range(X.shape[1]):
                 Ant[ii] = np.repeat(param[ii][i,:].reshape(1,-1),X.shape[0],axis=0)
         
         for i in range(X.shape[1]):  #Membership values using Gaussian membership function      
             L1[i,:,:] = self.gaussian(x=inputs[i],mu=Ant[0][i],sig=Ant[1][i])
-      
+      ##############################################################################################
         for j in range(functions):      #rule
             for i in range(1,X.shape[1]):
                 L2[:,j] = (L1[i-1,:,j]*L1[i,:,j])#+(L1[i-1,:,j]+L1[i,:,j])
@@ -103,7 +114,7 @@ class EVOLUTIONARY_ANFIS:
         L3 = L2/summation
         L3 = np.round(L3,5)
         #Errorcheck = np.sum(L3,axis=1)
-    
+    ###################################################################
         consequent = X
         L4 = np.zeros((functions,X.shape[0],X.shape[1]))
         for i in range (functions):
@@ -151,26 +162,26 @@ class EVOLUTIONARY_ANFIS:
             for ii in range(1,offsprings):
                 mut = self.mutation(parentParam)        
                 popParam[ii] = deepcopy(mut)
-                    
+                    ##################################################
             PopulationError = []
             bestModelLst = []
             for i in range(len(popParam)):
                 L1,L2,L3,L4 = self.forwardPass(popParam[i],X_train,inputsTrain,AntTrain,L1Train,L2Train,functions)
                 pred_train, Trained_models = self.linear_fit(L3,L4,X_train,y_train,functions,models)
                 mse_train = self.rmse(y_train,pred_train)
-
+############################################################3333
                 if optimize_test_data:
                     L1,L2,L3,L4 = self.forwardPass(popParam[i],X_test,inputsTest,AntTest,L1Test,L2Test,functions)
                     pred_test = self.linear_predict(L3,L4,X_test,functions,Trained_models)
                     mse_test = self.rmse(y_test,pred_test)
-                    
+                    #########################################################
                     PopulationError.append((mse_train+mse_test)/2)
-                    bestModelLst.append(Trained_models)
+                    bestModelLst.append(Trained_models) #
                 else:
                     PopulationError.append(mse_train)
-                    bestModelLst.append(Trained_models)
+                    bestModelLst.append(Trained_models)    ############3
 
-            bestParamIndex = np.argmin(PopulationError)
+            bestParamIndex = np.argmin(PopulationError)       ###################
             bestParam = deepcopy(popParam[bestParamIndex])
             bestModel = bestModelLst[bestParamIndex]
             print(gen,"RMSE is: ",PopulationError[bestParamIndex])   
@@ -178,7 +189,7 @@ class EVOLUTIONARY_ANFIS:
 
     def predict(self,X,bestParam,bestModel):
         functions = self.functions
-        inputs,Ant,L1,L2 = self.initialize(X)
+        inputs,Ant,L1,L2 = self.initialize(X)                 ###################3
         L1,L2,L3,L4 = self.forwardPass(bestParam,X,inputs,Ant,L1,L2,functions)
-        pred = self.linear_predict(L3,L4,X,functions,bestModel)
+        pred = self.linear_predict(L3,L4,X,functions,bestModel)      #####################
         return pred
